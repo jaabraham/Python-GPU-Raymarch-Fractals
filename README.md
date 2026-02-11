@@ -1,189 +1,96 @@
 # 3D Mandelbrot Raymarcher
 
-A real-time interactive 3D Mandelbrot set renderer using raymarching with modern OpenGL. Features smooth iteration-based coloring, ambient occlusion, volumetric fog, and a dynamic z-slice mode for exploring the fractal's interior.
+A real-time 3D Mandelbrot fractal visualizer using raymarching with OpenGL.
 
-![3D Mandelbrot](screenshot.png)
+![3D Mandelbrot](https://user-images.githubusercontent.com/placeholder.png)
 
 ## Features
 
-### Core Rendering
-- **Smooth Iteration Rendering** - Uses floating-point iteration counts for buttery-smooth color transitions and surfaces (no more banding artifacts)
-- **Raymarched 3D Mandelbrot** - True 3D quaternion-based Mandelbrot set with distance field estimation
-- **Binary Search Refinement** - Sub-step surface detection for precise hit points
-- **Real-time Performance** - GPU-accelerated fragment shader rendering
-
-### Visual Effects
-- **Ambient Occlusion** - Screen-space ambient occlusion for added depth and crevice darkening
-- **Volumetric Fog** - Distance-based atmospheric fog with light scattering
-- **Smooth Color Palette** - 8-color gradient system with interpolation
-- **Orbit Trap Coloring** - Additional detail from minimum orbit distance
-- **Anti-Aliasing** - 4x SSAA (Super Sample Anti-Aliasing) toggle
-- **Dynamic Shadows** - Shadow rays for crisp self-shadowing
-
-### Interactive Features
-- **Z-Slice Mode** - Cut the fractal at z=0 to reveal interior structure
-- **Iteration Control** - Adjust min/max iteration bounds in real-time (float precision)
-- **Camera Controls** - Full 6-DOF movement with pan, rotate, and zoom
-- **Live Parameter Editing** - Adjust AO, fog, lighting on the fly
+- **Real-time Raymarching**: Renders 3D Mandelbrot set using GPU-accelerated raymarching
+- **Iteration Shells**: Displays layered "onion-like" structure at iteration boundaries
+- **Interactive Controls**: Full camera movement and parameter adjustment
+- **Lighting & Shadows**: Diffuse lighting with soft shadows and orbit trap coloring
+- **Z-Slice Mode**: View cross-sections of the fractal
+- **Anti-Aliasing**: Optional 4x SSAA for smoother rendering
+- **Smart Rendering**: Fractal only re-renders when you press keys (saves GPU/CPU when idle)
 
 ## Requirements
 
-- Python 3.7+
-- OpenGL 3.3+ capable GPU
-- Dependencies:
-  - `glfw`
-  - `moderngl`
-  - `numpy`
+```bash
+pip install moderngl glfw numpy
+```
 
-## Installation
+## Usage
+
+Run the main fractal viewer:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/3d-mandelbrot-raymarcher.git
-cd 3d-mandelbrot-raymarcher
-
-# Create virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# or: .venv\Scripts\activate  # Windows
-
-# Install dependencies
-pip install glfw moderngl numpy
-
-# Run
 python fractal.py
 ```
 
+The program uses **smart rendering** - the fractal is only redrawn when you interact with it (key presses, camera movement). When idle, the display stays static and consumes minimal resources.
+
 ## Controls
 
-### Movement
+### Movement & Camera
+
 | Key | Action |
 |-----|--------|
-| **W / S** | Move forward / backward |
-| **↑ / ↓** | Pan camera up / down |
-| **← / →** | Pan camera left / right |
+| `W` / `S` | Move forward / backward |
+| `A` / `D` | Rotate left / right (yaw) |
+| `↑` / `↓` / `←` / `→` | Pan view (move camera up/down/left/right) |
+| `Page Up` / `Page Down` | Rotate up / down (pitch) |
+| `Q` / `E` | Scale in / out |
 
-### Rotation
+### Rendering Parameters
+
 | Key | Action |
 |-----|--------|
-| **A / D** | Rotate left / right (yaw) |
-| **Page Up / Page Down** | Rotate up / down (pitch) |
+| `R` / `F` | Adjust step size (precision) |
+| `T` / `G` | Increase / decrease max iterations |
+| `Y` / `H` | Increase / decrease min iterations (hollow threshold) |
+| `+` / `-` | Increase / decrease max ray distance |
+| `Space` | Toggle Z-slice mode |
+| `X` | Toggle anti-aliasing (4x SSAA) |
 
-### View Settings
+### Lighting & Visual Effects
+
 | Key | Action |
 |-----|--------|
-| **Q / E** | Scale (zoom in / out) |
-| **R / F** | Step size adjustment (finer / coarser) |
-| **U / J** | Max ray distance |
-| **SPACE** | Toggle z-slice mode |
-| **X** | Toggle anti-aliasing (4x SSAA) |
+| `I` / `K` | Move light up / down |
+| `J` / `L` | Move light left / right |
+| `V` / `B` | Increase / decrease ambient occlusion strength |
+| `N` / `M` | Increase / decrease fog density |
+| `,` / `.` | Increase / decrease volumetric light scattering |
+| `C` | Randomize color palette |
 
-### Iteration Control (Float Precision)
+### General
+
 | Key | Action |
 |-----|--------|
-| **T / G** | Max iterations (+/- 0.5) |
-| **Y / H** | Min iterations (+/- 0.25) |
+| `F1` | Print current state to console |
+| `0` | Reset all settings |
+| `ESC` | Exit |
 
-The smooth iteration system allows fractional iteration bounds, creating fluid transitions between shells.
+## File Overview
 
-### Visual Effects
-| Key | Action |
-|-----|--------|
-| **V / B** | Ambient occlusion strength |
-| **N / M** | Fog density |
-| **, / .** | Volumetric light scattering |
-
-### Lighting
-| Key | Action |
-|-----|--------|
-| **I / K** | Move light up / down |
-| **J / L** | Move light left / right |
-| **C** | Randomize color palette |
-
-### System
-| Key | Action |
-|-----|--------|
-| **F1** | Print current state to console |
-| **0** | Reset all parameters |
-| **ESC** | Exit |
-
-## Usage Tips
-
-### Exploring the Fractal
-1. **Start with defaults** - The default view shows the "main bulb" from a good angle
-2. **Use smooth iterations** - Press T/G and Y/H to adjust iteration bounds smoothly
-3. **Enable slice mode** - Press SPACE to cut the fractal and see interior iteration bands
-4. **Fine step size** - Press R to decrease step size for sharper details (slower)
-5. **Adjust fog** - Use N/M to control depth perception
-
-### Performance
-- Disable anti-aliasing (X) for better FPS on slower GPUs
-- Increase step size (F) for faster but less precise rendering
-- Reduce max iterations (G) for speed
-
-### Finding Good Views
-- The fractal has interesting structure around iteration bands 4-20
-- Try min_iter=6, max_iter=12 for the first main shell
-- Zoom in (Q) and decrease step size (R) for surface detail
-- Use pan (arrow keys) to explore without changing angle
+| File | Description |
+|------|-------------|
+| `fractal.py` | **Main program** - Full-featured 3D Mandelbrot raymarcher |
+| `mandel_raymarch.py` | Alternative raymarching implementation |
+| `mandelbrot3d.py` | 3D Mandelbrot utilities |
+| `main.py` / `main_fixed.py` | Earlier implementations |
+| `debug_mandel.py` | Debugging utilities |
+| `test_simple.py` | Simple test cases |
 
 ## Technical Details
 
-### Rendering Pipeline
-1. **Ray Generation** - Cast rays from camera through each pixel
-2. **Marching Loop** - Step along ray, testing for Mandelbrot boundary crossing
-3. **Binary Refinement** - When crossing detected, binary search for exact surface
-4. **Shading** - Calculate normals, lighting, AO, and fog
-5. **Slice Overlay** - In slice mode, render z=0 intersection with interior coloring
-
-### The 3D Mandelbrot
-The "Mandelbulb" uses the iteration:
-```
-z = z^2 + c  (in 3D quaternion-like algebra)
-```
-
-Where the 3D version uses spherical coordinates for the power operation:
-```
-x' = r^2 * sin(2*theta) * cos(2*phi) + c.x
-y' = r^2 * sin(2*theta) * sin(2*phi) + c.y
-z' = r^2 * cos(2*theta) + c.z
-```
-
-### Smooth Iterations
-Instead of integer iteration counts, we use:
-```
-smooth_iter = i - log(log(|z|)) / log(2)
-```
-
-This provides sub-integer precision for color gradients and surface positioning.
-
-## Window Title Info
-
-The window title shows real-time stats:
-```
-3D Mandelbrot | FPS:60 | Pos:(x,y,z) | Dist:D | Step:S | Scale:Z | AA
-```
-
-- **FPS** - Current frame rate
-- **Pos** - Camera position
-- **Dist** - Distance from origin
-- **Step** - Current ray step size
-- **Scale** - Zoom level
-- **AA** - Anti-aliasing on/off
-
-## Troubleshooting
-
-**Black screen**: Check OpenGL 3.3+ support
-**Low FPS**: Disable AA, increase step size, or lower resolution
-**No slice visible**: Ensure min_iter < max_iter and you're in slice mode (SPACE)
-**Shader compile error**: Check that all dependencies are installed
+- **Resolution**: 1280×720 (windowed, resizable)
+- **Algorithm**: Raymarching with analytic distance estimator
+- **Shader**: GLSL fragment shader with orbit trap coloring
+- **Default Params**: 100 max iterations, 6 min iterations
+- **Rendering**: Smart render-on-demand (no continuous redraw)
 
 ## License
 
-MIT License - Feel free to use, modify, and distribute!
-
-## Credits
-
-Created with ModernGL and GLFW for Python.
-
-Inspired by the Mandelbulb and quaternion Julia sets.
+MIT License - feel free to use and modify!

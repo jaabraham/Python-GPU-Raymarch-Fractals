@@ -452,17 +452,17 @@ ao_strength = 2.0      # Ambient occlusion strength (0-5)
 fog_density = 0.5      # Volumetric fog density (0-2)
 volumetric_light = 1.0 # Volumetric light scattering (0-3)
 
-# 8-color complementary palette for smooth gradient (low to high iterations)
-# Custom order: Deep Blue -> Yellow -> ... -> Dark Red -> White
+# 8-color rainbow palette for smooth gradient (low to high iterations)
+# Rainbow order: Red -> Orange -> Yellow -> Green -> Cyan -> Blue -> Violet
 colors = np.array([
-    [0.0, 0.2, 0.6],      # 0: Deep blue (first)
-    [1.0, 0.9, 0.0],      # 1: Yellow (second)
-    [0.0, 0.6, 0.7],      # 2: Cyan/Teal
-    [0.2, 0.8, 0.3],      # 3: Green
-    [0.4, 0.0, 0.0],      # 4: Dark red (fifth)
-    [1.0, 0.4, 0.0],      # 5: Orange
-    [0.15, 0.0, 0.4],     # 6: Indigo
-    [1.0, 0.95, 0.9],     # 7: Warm white
+    [1.0, 0.0, 0.0],      # 0: Red
+    [1.0, 0.5, 0.0],      # 1: Orange
+    [1.0, 1.0, 0.0],      # 2: Yellow
+    [0.0, 1.0, 0.0],      # 3: Green
+    [0.0, 1.0, 1.0],      # 4: Cyan
+    [0.0, 0.0, 1.0],      # 5: Blue
+    [0.5, 0.0, 1.0],      # 6: Violet
+    [1.0, 1.0, 1.0],      # 7: White
 ], dtype=np.float32)
 
 # Movement speeds
@@ -509,9 +509,12 @@ def print_status():
 
 def key_callback(window, key, scancode, action, mods):
     global yaw, pitch, scale, iter_max, min_iter, step_size, max_dist, slice_mode, aa_samples, light_pos, colors
-    global ao_strength, fog_density, volumetric_light
+    global ao_strength, fog_density, volumetric_light, needs_render
     if action not in (glfw.PRESS, glfw.REPEAT):
         return
+    
+    # Mark that we need to render on any valid key press
+    needs_render = True
 
     # F1 - Print status
     if key == glfw.KEY_F1:
@@ -551,8 +554,8 @@ def key_callback(window, key, scancode, action, mods):
     # Light
     if key == glfw.KEY_I: light_pos[1] += 0.5
     if key == glfw.KEY_K: light_pos[1] -= 0.5
-    if key == glfw.KEY_J: light_pos[0] -= 0.5
-    if key == glfw.KEY_L: light_pos[0] += 0.5
+    if key == glfw.KEY_J: light_pos[0] -= 0.5  # Light left
+    if key == glfw.KEY_L: light_pos[0] += 0.5  # Light right
 
     # Ambient Occlusion (V/B keys)
     if key == glfw.KEY_V:
@@ -592,9 +595,9 @@ def key_callback(window, key, scancode, action, mods):
         colors[7][:] = [1.0, 1.0, 1.0]  # Always white at top
 
 
-    # Max ray distance
-    if key == glfw.KEY_U: max_dist *= 1.2
-    if key == glfw.KEY_J: max_dist *= 0.8
+    # Max ray distance (+/- keys)
+    if key == glfw.KEY_EQUAL: max_dist *= 1.2  # + key (no shift = +)
+    if key == glfw.KEY_MINUS: max_dist *= 0.8  # - key
 
     # Reset
     if key == glfw.KEY_0:
@@ -606,8 +609,7 @@ def key_callback(window, key, scancode, action, mods):
     max_dist = max(10.0, min(500.0, max_dist))
     min_iter = min(min_iter, iter_max - 5.0)
 
-    # U / J for max distance (check for shift to distinguish from J for light)
-    # Note: Using mods to check for shift if needed, but we handle U/J above
+
 
 def reset_camera():
     global cam_pos, yaw, pitch, scale, step_size, iter_max, min_iter, slice_mode, light_pos, max_dist, colors, aa_samples
@@ -626,15 +628,15 @@ def reset_camera():
     ao_strength = 2.0
     fog_density = 0.5
     volumetric_light = 1.0
-    # Reset to default cosmic sunset palette
-    colors[0][:] = [0.0, 0.2, 0.6]      # Deep blue (first)
-    colors[1][:] = [1.0, 0.9, 0.0]      # Yellow (second)
-    colors[2][:] = [0.0, 0.6, 0.7]      # Cyan/Teal
-    colors[3][:] = [0.2, 0.8, 0.3]      # Green
-    colors[4][:] = [0.4, 0.0, 0.0]      # Dark red (fifth)
-    colors[5][:] = [1.0, 0.4, 0.0]      # Orange
-    colors[6][:] = [0.15, 0.0, 0.4]     # Indigo
-    colors[7][:] = [1.0, 0.95, 0.9]     # Warm white
+    # Reset to default rainbow palette
+    colors[0][:] = [1.0, 0.0, 0.0]      # Red
+    colors[1][:] = [1.0, 0.5, 0.0]      # Orange
+    colors[2][:] = [1.0, 1.0, 0.0]      # Yellow
+    colors[3][:] = [0.0, 1.0, 0.0]      # Green
+    colors[4][:] = [0.0, 1.0, 1.0]      # Cyan
+    colors[5][:] = [0.0, 0.0, 1.0]      # Blue
+    colors[6][:] = [0.5, 0.0, 1.0]      # Violet
+    colors[7][:] = [1.0, 1.0, 1.0]      # White
 
 glfw.set_key_callback(window, key_callback)
 
@@ -666,7 +668,7 @@ print("  A/D          - Rotate left/right (yaw)")
 print("  Page Up/Down - Rotate up/down (pitch)")
 print("  Q / E        - Scale")
 print("  R / F        - Step size")
-print("  U / J        - Max ray distance")
+print("  + / -        - Max ray distance")
 print("  T / G        - Max iterations (+/- 0.5)")
 print("  Y / H        - Min iterations (+/- 0.25)")
 print("  SPACE        - Toggle Z-slice")
@@ -697,14 +699,37 @@ print(f"  Vol. Light:  {volumetric_light:.2f}")
 print("=" * 60)
 
 # -------------------------------------------------
-# Main Loop
+# Movement Keys - Used to detect if we need to render
+# -------------------------------------------------
+MOVEMENT_KEYS = [
+    glfw.KEY_W, glfw.KEY_S,
+    glfw.KEY_UP, glfw.KEY_DOWN, glfw.KEY_LEFT, glfw.KEY_RIGHT
+]
+
+def is_movement_key_pressed(window):
+    """Check if any continuous movement key is currently held down"""
+    for key in MOVEMENT_KEYS:
+        if glfw.get_key(window, key) == glfw.PRESS:
+            return True
+    return False
+
+# -------------------------------------------------
+# Main Loop - Only renders when needed
 # -------------------------------------------------
 frame = 0
 fps = 0.0
 last_time = glfw.get_time()
+needs_render = True  # Render initial frame
 
 while not glfw.window_should_close(window):
-    glfw.poll_events()
+    # Use wait_events when idle to save CPU, poll_events when active
+    if needs_render or is_movement_key_pressed(window):
+        glfw.poll_events()
+    else:
+        # Block until an event occurs (saves CPU when idle)
+        glfw.wait_events()
+        needs_render = True  # Event occurred, need to render
+        continue
 
     # Ensure viewport matches window (fix for black bars)
     fb_width, fb_height = glfw.get_framebuffer_size(window)
@@ -712,65 +737,76 @@ while not glfw.window_should_close(window):
         WIDTH, HEIGHT = fb_width, fb_height
         ctx.viewport = (0, 0, WIDTH, HEIGHT)
         prog["u_resolution"].value = (WIDTH, HEIGHT)
+        needs_render = True
 
-    # Camera movement
+    # Camera movement (continuous keys)
+    moved = False
     rot = get_rotation_matrix(yaw, pitch)
     forward = rot[:, 2]
     right = rot[:, 0]
 
     if glfw.get_key(window, glfw.KEY_W) == glfw.PRESS:
         cam_pos -= forward * move_speed
+        moved = True
     if glfw.get_key(window, glfw.KEY_S) == glfw.PRESS:
         cam_pos += forward * move_speed
-    # Arrow keys for panning (move camera up/down/left/right)
+        moved = True
     if glfw.get_key(window, glfw.KEY_UP) == glfw.PRESS:
-        cam_pos[1] += move_speed  # Pan up (Y axis)
+        cam_pos[1] += move_speed
+        moved = True
     if glfw.get_key(window, glfw.KEY_DOWN) == glfw.PRESS:
-        cam_pos[1] -= move_speed  # Pan down (Y axis)
+        cam_pos[1] -= move_speed
+        moved = True
     if glfw.get_key(window, glfw.KEY_LEFT) == glfw.PRESS:
-        cam_pos += right * move_speed  # Pan left
+        cam_pos += right * move_speed
+        moved = True
     if glfw.get_key(window, glfw.KEY_RIGHT) == glfw.PRESS:
-        cam_pos -= right * move_speed  # Pan right
+        cam_pos -= right * move_speed
+        moved = True
 
-    # Update uniforms
-    prog["u_resolution"].value = (WIDTH, HEIGHT)
-    prog["u_cam_pos"].value = tuple(cam_pos)
-    prog["u_cam_rot"].write(rot.T.tobytes())
-    prog["u_scale"].value = scale
-    prog["u_offset"].value = tuple(offset)
-    prog["u_iter_max"].value = int(iter_max)
-    prog["u_min_iter"].value = float(min_iter)
-    prog["u_max_iter_float"].value = iter_max
-    prog["u_escape"].value = escape_radius
-    prog["u_step_size"].value = step_size
-    prog["u_max_dist"].value = max_dist
-    prog["u_slice_mode"].value = slice_mode
-    prog["u_aa_samples"].value = aa_samples
-    prog["u_light_pos"].value = tuple(light_pos)
-    prog["u_colors"].write(colors.tobytes())
-    prog["u_ao_strength"].value = ao_strength
-    prog["u_fog_density"].value = fog_density
-    prog["u_volumetric_light"].value = volumetric_light
+    # Only render if something changed or continuous movement is happening
+    if needs_render or moved:
+        # Update uniforms
+        prog["u_resolution"].value = (WIDTH, HEIGHT)
+        prog["u_cam_pos"].value = tuple(cam_pos)
+        prog["u_cam_rot"].write(rot.T.tobytes())
+        prog["u_scale"].value = scale
+        prog["u_offset"].value = tuple(offset)
+        prog["u_iter_max"].value = int(iter_max)
+        prog["u_min_iter"].value = float(min_iter)
+        prog["u_max_iter_float"].value = iter_max
+        prog["u_escape"].value = escape_radius
+        prog["u_step_size"].value = step_size
+        prog["u_max_dist"].value = max_dist
+        prog["u_slice_mode"].value = slice_mode
+        prog["u_aa_samples"].value = aa_samples
+        prog["u_light_pos"].value = tuple(light_pos)
+        prog["u_colors"].write(colors.tobytes())
+        prog["u_ao_strength"].value = ao_strength
+        prog["u_fog_density"].value = fog_density
+        prog["u_volumetric_light"].value = volumetric_light
 
-    # Render
-    ctx.clear(0, 0, 0)
-    vao.render(moderngl.TRIANGLES)
-    glfw.swap_buffers(window)
+        # Render
+        ctx.clear(0, 0, 0)
+        vao.render(moderngl.TRIANGLES)
+        glfw.swap_buffers(window)
 
-    # FPS counter (internal only, no console output)
-    frame += 1
-    if frame % 60 == 0:
-        current_time = glfw.get_time()
-        fps = 60.0 / (current_time - last_time)
-        last_time = current_time
+        # Reset render flag until next key press
+        needs_render = False
 
-    # Update window title with stats (every 10 frames for smoothness)
-    if frame % 10 == 0:
-        aa_str = 'AA' if aa_samples > 1 else 'NOAA'
-        # Calculate camera distance from origin
-        orig_dist = np.sqrt(np.sum(cam_pos**2))
-        title = f"3D Mandelbrot | FPS:{fps:.0f} | Pos:({cam_pos[0]:.2f},{cam_pos[1]:.2f},{cam_pos[2]:.2f}) | Dist:{orig_dist:.2f} | Step:{step_size:.4f} | Scale:{scale:.2f} | {aa_str}"
-        glfw.set_window_title(window, title)
+        # FPS counter
+        frame += 1
+        if frame % 60 == 0:
+            current_time = glfw.get_time()
+            fps = 60.0 / (current_time - last_time)
+            last_time = current_time
+
+        # Update window title with stats (every 10 frames)
+        if frame % 10 == 0:
+            aa_str = 'AA' if aa_samples > 1 else 'NOAA'
+            orig_dist = np.sqrt(np.sum(cam_pos**2))
+            title = f"3D Mandelbrot | FPS:{fps:.0f} | Pos:({cam_pos[0]:.2f},{cam_pos[1]:.2f},{cam_pos[2]:.2f}) | Dist:{orig_dist:.2f} | Step:{step_size:.4f} | Scale:{scale:.2f} | {aa_str}"
+            glfw.set_window_title(window, title)
 
 glfw.terminate()
 print("\n\nExited.")
